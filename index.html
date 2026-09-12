@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindLife — Latih Otak Anda Untuk Kehidupan Seharian</title>
+    <!-- Tailwind CSS untuk reka bentuk pantas dan kontras tinggi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel untuk komponen interaktif -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        /* Gaya mesra warga emas: Fon besar & sentuhan sekurang-kurangnya 56px */
+        .touch-target { min-height: 56px; min-width: 56px; }
+        body { font-size: 18px; background-color: #F8FAFC; color: #1E293B; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+    <div id="root" class="flex-1 flex flex-col"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Pangkalan Data 50 Soalan Latihan Kognitif (Konteks Malaysia & Realistik)
+        const MASTER_EXERCISES = [
+            {
+                id: "mem_01",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Senarai Barangan Runcit",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja", "perhatian"],
+                scenario: "Anda berada di Kedai Runcit Mydin dan melihat senarai barang yang perlu dibeli.",
+                instructions: "Sila teliti dan ingat senarai barang dan harga di bawah dengan cermat sebelum masa tamat:",
+                data: { items: ["Roti Gardenia - RM3.50", "Susu Dutch Lady - RM7.20", "Epal Merah - RM5.00", "Kopi O - RM6.80"] },
+                question: "Pilih barangan yang berada di dalam senarai yang anda lihat sebentar tadi:",
+                options: ["Roti Gardenia", "Beras Faiza", "Susu Dutch Lady", "Epal Merah", "Teh Boh"],
+                correctAnswer: ["Roti Gardenia", "Susu Dutch Lady", "Epal Merah"],
+                explanation: "Barangan yang betul di dalam senarai ialah Roti Gardenia, Susu Dutch Lady, dan Epal Merah."
+            },
+            {
+                id: "money_01",
+                category: "Wang",
+                type: "single_choice",
+                title: "Perbelanjaan Harian",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan", "membuat_keputusan"],
+                scenario: "Anda mempunyai baki wang sebanyak RM100 di dalam dompet anda hari ini.",
+                instructions: "Sila ingat harga barangan dan perbelanjaan yang tertera di bawah sebelum menjawab soalan:",
+                data: { items: ["Barangan Runcit: RM42", "Tambang LRT: RM15", "Baki Permulaan: RM100"] },
+                question: "Berapakah baki wang tunai yang tinggal di dalam dompet anda selepas perbelanjaan tersebut?",
+                options: ["RM33", "RM43", "RM58", "RM45"],
+                correctAnswer: "RM43",
+                explanation: "RM100 - RM42 (Runcit) - RM15 (LRT) = RM43 baki."
+            },
+            {
+                id: "plan_01",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Jadual Harian & Bank",
+                difficulty: 3,
+                cognitiveSkills: ["perancangan", "kesedaran_situasi"],
+                scenario: "Bank tempatan mempunyai waktu operasi yang terhad manakala ahli keluarga anda dijadualkan pulang.",
+                instructions: "Sila ingat jadual masa penting di bawah sebelum menjawab soalan:",
+                data: { items: ["Waktu Tutup Bank: 4:00 Petang", "Anak Perempuan Tiba: 5:00 Petang"] },
+                question: "Anda perlu melawat bank yang ditutup pada pukul 4:00 Petang dan anak perempuan anda tiba pada pukul 5:00 Petang. Apa yang anda patut lakukan dahulu?",
+                options: [
+                    "Pergi ke klinik dahulu, kemudian terus ke bank.",
+                    "Pergi ke bank dahulu sebelum pukul 4 petang, kemudian ke klinik.",
+                    "Tunggu anak perempuan datang dahulu.",
+                    "Tidur di rumah."
+                ],
+                correctAnswer: "Pergi ke bank dahulu sebelum pukul 4 petang, kemudian ke klinik.",
+                explanation: "Anda perlu mendahulukan urusan bank kerana ia mempunyai masa tutup yang ketat (4:00 Petang)."
+            },
+            {
+                id: "super_01",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Bajet Pasar Raya",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan", "ingatan_kerja"],
+                scenario: "Anda mempunyai bajet sebanyak RM50 untuk membeli keperluan dapur di pasar raya.",
+                instructions: "Sila ingat harga barangan basah di bawah sebelum menjawab soalan:",
+                data: { items: ["Ikan Selar: RM18", "Sayur Sawi: RM7", "Bajet Keseluruhan: RM50"] },
+                question: "Berdasarkan harga Ikan Selar dan Sayur Sawi yang anda lihat, berapakah jumlah harga kedua-dua barang tersebut?",
+                options: ["RM20", "RM25", "RM30", "RM35"],
+                correctAnswer: "RM25",
+                explanation: "RM18 + RM7 = RM25. Jumlah ini masih dalam bajet RM50."
+            },
+            {
+                id: "mem_02",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Ubat Harian",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda menyemak jadual pengambilan ubat harian anda di atas meja.",
+                instructions: "Sila ingat masa dan jenis ubat di bawah sebelum menjawab soalan:",
+                data: { items: ["Ubat Tekanan Darah (Pagi): 1 Biji", "Ubat Kencing Manis (Tengah Hari): 1 Biji", "Vitamin C (Malam): 1 Biji"] },
+                question: "Bilakah ubat Kencing Manis dijadualkan untuk diambil?",
+                options: ["Pagi", "Tengah Hari", "Malam", "Sebelum Tidur"],
+                correctAnswer: "Tengah Hari",
+                explanation: "Berdasarkan jadual, ubat Kencing Manis diambil pada waktu tengah hari."
+            },
+            {
+                id: "money_02",
+                category: "Wang",
+                type: "single_choice",
+                title: "Baki Duit Kopi",
+                difficulty: 1,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Anda membeli secawan teh tarik dan kuih di gerai mamak.",
+                instructions: "Sila ingat harga makanan di bawah sebelum menjawab soalan:",
+                data: { items: ["Teh Tarik: RM2.50", "Kuih Muih: RM3.00", "Wang Diberi: RM10.00"] },
+                question: "Berapakah baki wang yang sepatutnya dipulangkan oleh pembuat air?",
+                options: ["RM3.50", "RM4.00", "RM4.50", "RM5.00"],
+                correctAnswer: "RM4.50",
+                explanation: "Jumlah harga = RM2.50 + RM3.00 = RM5.50. Wang diberi RM10.00 - RM5.50 = RM4.50 baki."
+            },
+            {
+                id: "plan_02",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Temujanji Doktor",
+                difficulty: 2,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Anda mempunyai temujanji kesihatan di klinik kesihatan berdekatan.",
+                instructions: "Sila ingat butiran masa di bawah sebelum menjawab soalan:",
+                data: { items: ["Waktu Pendaftaran Klinik: 9:00 Pagi", "Jarak Perjalanan: 20 Minit"] },
+                question: "Pukul berapakah paling lewat anda harus bertolak dari rumah untuk sampai tepat pada waktu pendaftaran?",
+                options: ["8:00 Pagi", "8:40 Pagi", "9:10 Pagi", "9:30 Pagi"],
+                correctAnswer: "8:40 Pagi",
+                explanation: "Untuk sampai pada 9:00 Pagi dengan mengambil masa 20 minit perjalanan, anda perlu bertolak selewat-lewatnya pada 8:40 Pagi."
+            },
+            {
+                id: "mem_03",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Nombor Kecemasan",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda melihat memo nombor penting yang dilekatkan di peti sejuk rumah.",
+                instructions: "Sila ingat nombor telefon penting di bawah:",
+                data: { items: ["Klinik Kesihatan: 03-4567890", "Jiran Sebelah (Pakcik Ali): 012-3456789"] },
+                question: "Apakah nombor telefon Klinik Kesihatan yang tertera pada memo?",
+                options: ["03-4567890", "012-3456789", "03-9999999", "019-8765432"],
+                correctAnswer: "03-4567890",
+                explanation: "Nombor klinik kesihatan yang betul ialah 03-4567890."
+            },
+            {
+                id: "super_02",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Diskaun Buah-Buahan",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Pasar raya sedang mengadakan jualan murah untuk buah-buahan tempatan.",
+                instructions: "Sila ingat harga asal dan penjimatan di bawah:",
+                data: { items: ["Harga Asal Tembikai: RM12.00", "Diskaun Diberikan: RM3.00"] },
+                question: "Berapakah harga buah tembikai selepas ditolak diskaun?",
+                options: ["RM8.00", "RM9.00", "RM10.00", "RM11.00"],
+                correctAnswer: "RM9.00",
+                explanation: "RM12.00 - RM3.00 = RM9.00 selepas diskaun."
+            },
+            {
+                id: "plan_03",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Memasak Nasi",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan", "perhatian"],
+                scenario: "Anda sedang menyediakan makan tengah hari untuk keluarga di dapur.",
+                instructions: "Sila ingat tempoh masa memasak di bawah:",
+                data: { items: ["Masa Masak Nasi: 20 Minit", "Masa Tumis Sayur: 10 Minit"] },
+                question: "Aktiviti manakah yang mengambil masa lebih lama untuk disiapkan?",
+                options: ["Memasak Nasi", "Menumis Sayur", "Kedua-duanya sama masa", "Tiada jawapan"],
+                correctAnswer: "Memasak Nasi",
+                explanation: "Memasak nasi mengambil masa 20 minit, manakala menumis sayur hanya 10 minit."
+            },
+            {
+                id: "mem_04",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Bil Utiliti Rumah",
+                difficulty: 2,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda menyemak surat khabar dan bil yang diterima hari ini.",
+                instructions: "Sila ingat tarikh akhir bayaran bil di bawah:",
+                data: { items: ["Bil Elektrik (TNB): 25hb", "Bil Air (Air Selangor): 28hb"] },
+                question: "Apakah tarikh akhir bagi bayaran Bil Elektrik (TNB)?",
+                options: ["20hb", "25hb", "28hb", "30hb"],
+                correctAnswer: "25hb",
+                explanation: "Tarikh akhir bil elektrik ialah pada 25hb."
+            },
+            {
+                id: "money_03",
+                category: "Wang",
+                type: "single_choice",
+                title: "Belian Petrol",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Anda mengisi minyak kereta di stesen Petronas.",
+                instructions: "Sila ingat jumlah bayaran petrol di bawah:",
+                data: { items: ["Jumlah Minyak Ron95: RM55.00", "Wang Tunai Dibayar: RM100.00"] },
+                question: "Berapakah baki wang tunai yang anda akan terima?",
+                options: ["RM35.00", "RM40.00", "RM45.00", "RM50.00"],
+                correctAnswer: "RM45.00",
+                explanation: "RM100.00 - RM55.00 = RM45.00 baki."
+            },
+            {
+                id: "plan_04",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Aktiviti Pagi",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Rutin pagi anda di taman perumahan.",
+                instructions: "Sila ingat urutan aktiviti pagi yang biasa anda lakukan:",
+                data: { items: ["1. Solat Subuh", "2. Senaman Ringan di Laman", "3. Sarapan Pagi"] },
+                question: "Apakah aktiviti yang dilakukan serta-merta selepas Solat Subuh mengikut senarai?",
+                options: ["Sarapan Pagi", "Senaman Ringan di Laman", "Tidur Semula", "Membaca Buku"],
+                correctAnswer: "Senaman Ringan di Laman",
+                explanation: "Selepas solat subuh, jadual meneruskan senaman ringan di laman."
+            },
+            {
+                id: "mem_05",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Kod Pintu Pagar",
+                difficulty: 2,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda mencatat nombor kod keselamatan pintu pagar automatik.",
+                instructions: "Sila ingat kod keselamatan 4 digit di bawah:",
+                data: { items: ["Kod Keselamatan Pagar: 4821"] },
+                question: "Apakah nombor kedua dalam kod keselamatan pintu pagar tersebut?",
+                options: ["4", "8", "2", "1"],
+                correctAnswer: "8",
+                explanation: "Kod keselamatan ialah 4821, nombor kedua ialah 8."
+            },
+            {
+                id: "super_03",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Pemilihan Ikan",
+                difficulty: 1,
+                cognitiveSkills: ["perhatian"],
+                scenario: "Anda berada di bahagian basah pasar raya besar.",
+                instructions: "Sila ingat senarai ikan segar yang dipamerkan:",
+                data: { items: ["Ikan Kembung", "Ikan Siakap", "Ikan Bawal Hitam"] },
+                question: "Antara berikut, yang manakah disenaraikan sebagai ikan segar di pasar raya tersebut?",
+                options: ["Ikan Siakap", "Ayam Kampung", "Daging Lembu", "Sotong Merah"],
+                correctAnswer: "Ikan Siakap",
+                explanation: "Ikan Siakap adalah salah satu senarai ikan segar."
+            },
+            {
+                id: "money_04",
+                category: "Wang",
+                type: "single_choice",
+                title: "Sedekah Jumaat",
+                difficulty: 1,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Anda merancang tabung sedekah subuh dan Jumaat.",
+                instructions: "Sila ingat amaun sumbangan mingguan:",
+                data: { items: ["Tabung Jumaat: RM10", "Tabung Masjid Anak Yatim: RM20"] },
+                question: "Berapakah jumlah keseluruhan wang sumbangan derma tersebut?",
+                options: ["RM20", "RM25", "RM30", "RM40"],
+                correctAnswer: "RM30",
+                explanation: "RM10 + RM20 = RM30 jumlah keseluruhan."
+            },
+            {
+                id: "plan_05",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Siram Pokok Bunga",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Jadual menyiram pokok bunga di halaman rumah.",
+                instructions: "Sila ingat waktu siraman tanaman:",
+                data: { items: ["Waktu Pagi: 7:00 Pagi", "Waktu Petang: 6:30 Petang"] },
+                question: "Pada pukul berapakah siraman pokok bunga pada waktu petang dijadualkan?",
+                options: ["5:00 Petang", "6:00 Petang", "6:30 Petang", "7:00 Malam"],
+                correctAnswer: "6:30 Petang",
+                explanation: "Siraman petang dijadualkan pada pukul 6:30 Petang."
+            },
+            {
+                id: "mem_06",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Jenama Minyak Masak",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda melihat stok minyak masak di dalam kabinet dapur.",
+                instructions: "Sila ingat jenama minyak masak di bawah:",
+                data: { items: ["Minyak Masak: Saji 5KG"] },
+                question: "Apakah jenama dan berat minyak masak yang terdapat di dalam kabinet?",
+                options: ["Alif 2KG", "Saji 5KG", "Buruh 3KG", "Vesawit 1KG"],
+                correctAnswer: "Saji 5KG",
+                explanation: "Jenama yang betul ialah Saji 5KG."
+            },
+            {
+                id: "super_04",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Berat Beras",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Anda membeli bekalan beras untuk kegunaan sebulan di kedai runcit.",
+                instructions: "Sila ingat berat kampit beras:",
+                data: { items: ["Kampit Beras A: 5 KG", "Kampit Beras B: 10 KG"] },
+                question: "Berapakah jumlah berat jika anda membeli kedua-dua kampit beras tersebut?",
+                options: ["10 KG", "15 KG", "20 KG", "25 KG"],
+                correctAnswer: "15 KG",
+                explanation: "5 KG + 10 KG = 15 KG jumlah keseluruhan berat beras."
+            },
+            {
+                id: "plan_06",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Masa Tidur Malam",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Amalan sihat untuk warga emas berehat pada waktu malam.",
+                instructions: "Sila ingat waktu rehat yang disyorkan:",
+                data: { items: ["Masuk Bilik Tidur: 10:00 Malam", "Bangun Pagi: 5:30 Pagi"] },
+                question: "Pukul berapakah anda dijadualkan masuk ke bilik tidur pada waktu malam?",
+                options: ["9:00 Malam", "10:00 Malam", "11:00 Malam", "12:00 Tengah Malam"],
+                correctAnswer: "10:00 Malam",
+                explanation: "Waktu masuk bilik tidur yang ditetapkan ialah 10:00 Malam."
+            },
+            {
+                id: "mem_07",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Warna Kereta",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja", "perhatian"],
+                scenario: "Anda meletakkan kereta di tempat letak kereta pusat beli-belah.",
+                instructions: "Sila ingat warna dan aras parkir kenderaan anda:",
+                data: { items: ["Warna Kereta: Merah", "Aras Parkir: Aras 2B"] },
+                question: "Di aras manakah kereta anda diletakkan?",
+                options: ["Aras 1A", "Aras 2B", "Aras 3C", "Aras Bawah"],
+                correctAnswer: "Aras 2B",
+                explanation: "Kereta diletakkan di aras 2B."
+            },
+            {
+                id: "money_05",
+                category: "Wang",
+                type: "single_choice",
+                title: "Bil Telefon Bimbit",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Anda membuat bayaran bil bulanan talian telefon di kedai telekomunikasi.",
+                instructions: "Sila ingat amaun bil dan caj perkhidmatan:",
+                data: { items: ["Harga Bil Asal: RM48.00", "Caj Perkhidmatan: RM2.00"] },
+                question: "Berapakah jumlah bayaran keseluruhan yang perlu dijelaskan?",
+                options: ["RM48.00", "RM50.00", "RM52.00", "RM55.00"],
+                correctAnswer: "RM50.00",
+                explanation: "RM48.00 + RM2.00 = RM50.00 jumlah keseluruhan bayaran."
+            },
+            {
+                id: "plan_07",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Tempoh Rehat Petang",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Jadual rehat petang sambil membaca surat khabar.",
+                instructions: "Sila ingat tempoh masa rehat:",
+                data: { items: ["Masa Mula: 4:00 Petang", "Tempoh Rehat: 45 Minit"] },
+                question: "Pukul berapakah waktu rehat petang anda akan tamat?",
+                options: ["4:30 Petang", "4:45 Petang", "5:00 Petang", "5:15 Petang"],
+                correctAnswer: "4:45 Petang",
+                explanation: "4:00 Petang ditambah 45 minit menjadikan waktu tamat pada 4:45 Petang."
+            },
+            {
+                id: "mem_08",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Nama Cucu Kesayangan",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda menyemak senarai hadiah hari jadi untuk cucu-cucu.",
+                instructions: "Sila ingat senarai nama cucu:",
+                data: { items: ["Cucu Sulong: Amir", "Cucu Kedua: Sarah"] },
+                question: "Siapakah nama cucu sulong di dalam senarai tersebut?",
+                options: ["Amir", "Sarah", "Ahmad", "Fatimah"],
+                correctAnswer: "Amir",
+                explanation: "Cucu sulong ialah Amir."
+            },
+            {
+                id: "super_05",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Pembelian Telur",
+                difficulty: 1,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Anda membeli sebiji papan telur ayam di kedai runcit.",
+                instructions: "Sila ingat bilangan biji telur sepapan:",
+                data: { items: ["Jumlah Telur Sepapan: 30 Biji", "Pecah Semasa Memandu: 2 Biji"] },
+                question: "Berapakah biji telur yang masih selamat dan elok digunakan?",
+                options: ["26 Biji", "28 Biji", "29 Biji", "30 Biji"],
+                correctAnswer: "28 Biji",
+                explanation: "30 Biji - 2 Biji pecah = 28 Biji telur yang elok."
+            },
+            {
+                id: "plan_08",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Mesyuarat Persatuan",
+                difficulty: 2,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Anda dijadualkan menghadiri mesyuarat penduduk taman.",
+                instructions: "Sila ingat masa mula mesyuarat:",
+                data: { items: ["Masa Mula Mesyuarat: 8:30 Malam", "Perjalanan Ambil Masa: 15 Minit"] },
+                question: "Pukul berapakah anda harus bertolak dari rumah untuk sampai tepat pada masa mula?",
+                options: ["8:00 Malam", "8:15 Malam", "8:30 Malam", "8:45 Malam"],
+                correctAnswer: "8:15 Malam",
+                explanation: "Bertolak 15 minit awal dari 8:30 Malam bermaksud anda perlu keluar pada 8:15 Malam."
+            },
+            {
+                id: "mem_09",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Jenis Roti Kegemaran",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Pesanan sarapan pagi untuk ahli keluarga.",
+                instructions: "Sila ingat jenis roti yang dipesan:",
+                data: { items: ["Roti Pesanan: Roti Wholemeal Gardenia"] },
+                question: "Apakah jenis roti yang dipesan untuk sarapan?",
+                options: ["Roti Tempayan", "Roti Wholemeal Gardenia", "Roti Canai", "Roti Naan"],
+                correctAnswer: "Roti Wholemeal Gardenia",
+                explanation: "Roti yang dipesan ialah Roti Wholemeal Gardenia."
+            },
+            {
+                id: "money_06",
+                category: "Wang",
+                type: "single_choice",
+                title: "Tambang Basikal / Pengangkutan",
+                difficulty: 2,
+                    cognitiveSkills: ["pengiraan"],
+                scenario: "Perbelanjaan tiket pengangkutan awam mingguan.",
+                instructions: "Sila ingat kos tambang harian:",
+                data: { items: ["Tambang Sehala: RM3.00", "Jumlah Perjalanan Sehari: 2 Kali (Pergi & Balik)"] },
+                question: "Berapakah jumlah wang tambang pengangkutan yang digunakan untuk sehari?",
+                options: ["RM3.00", "RM5.00", "RM6.00", "RM9.00"],
+                correctAnswer: "RM6.00",
+                explanation: "RM3.00 (pergi) + RM3.00 (balik) = RM6.00 sehari."
+            },
+            {
+                id: "plan_09",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Tempoh Rendam Pakaian",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Anda sedang mencuci pakaian menggunakan mesin basuh automatik.",
+                instructions: "Sila ingat tempoh masa cucian mesin:",
+                data: { items: ["Tempoh Basuh Biasa: 35 Minit"] },
+                question: "Berapakah minit yang diambil untuk lengkap satu pusingan basuhan biasa?",
+                options: ["20 Minit", "35 Minit", "50 Minit", "60 Minit"],
+                correctAnswer: "35 Minit",
+                explanation: "Tempoh cucian bas biasa ialah 35 minit."
+            },
+            {
+                id: "mem_10",
+                category: "Ingita",
+                type: "memory_recall",
+                title: "Nombor Plat Kereta",
+                difficulty: 2,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda menghafal nombor plat kenderaan rasmi anak.",
+                instructions: "Sila ingat nombor plat kereta di bawah:",
+                data: { items: ["Nombor Plat: VAB 4321"] },
+                question: "Apakah tiga angka nombor di hujung plat kenderaan tersebut?",
+                options: ["1234", "4321", "3421", "4123"],
+                correctAnswer: "4321",
+                explanation: "Nombor di hujung plat ialah 4321."
+            },
+            {
+                id: "super_06",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Pembelian Tepung Gandum",
+                difficulty: 1,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Persediaan membuat kuih tradisional di rumah.",
+                instructions: "Sila ingat harga sekampit tepung:",
+                data: { items: ["Harga Sekampit Tepung Gandum: RM2.50", "Kuantiti Dibeli: 2 Kampit"] },
+                question: "Berapakah jumlah harga untuk 2 kampit tepung gandum tersebut?",
+                options: ["RM4.00", "RM4.50", "RM5.00", "RM5.50"],
+                correctAnswer: "RM5.00",
+                explanation: "RM2.50 x 2 = RM5.00 jumlah keseluruhan."
+            },
+            {
+                id: "plan_10",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Jadual Minum Air Suam",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan", "perhatian"],
+                scenario: "Amalan kesihatan minum air kosong secukupnya setiap hari.",
+                instructions: "Sila ingat jadual gelas air:",
+                data: { items: ["Gelas Pagi: Selepas Bangun", "Gelas Kedua: Selepas Sarapan"] },
+                question: "Bilakah waktu gelas air kedua dicadangkan diminum?",
+                options: ["Sebelum Tidur", "Selepas Sarapan", "Tengah Malam", "Waktu Petang"],
+                correctAnswer: "Selepas Sarapan",
+                explanation: "Gelas kedua ditetapkan selepas sarapan pagi."
+            },
+            {
+                id: "mem_11",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Tarikh Sambutan Hari Ulang Tahun",
+                difficulty: 2,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Anda menyemak kalendar dinding rumah untuk tarikh penting.",
+                instructions: "Sila ingat tarikh ulang tahun perkahwinan:",
+                data: { items: ["Tarikh Ulang Tahun: 15hb Julai"] },
+                question: "Pada bulan apakah tarikh ulang tahun perkahwinan anda?",
+                options: ["Jun", "Julai", "Ogos", "September"],
+                correctAnswer: "Julai",
+                explanation: "Tarikh ulang tahun ialah pada 15hb Julai."
+            },
+            {
+                id: "money_07",
+                category: "Wang",
+                type: "single_choice",
+                title: "Belian Ikan Kembung",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Membeli ikan segar di pasar pagi.",
+                instructions: "Sila ingat harga sekilogram ikan:",
+                data: { items: ["Harga Sekilogram Ikan Kembung: RM14.00", "Berat Dibeli: 2 Kilogram"] },
+                question: "Berapakah jumlah wang yang perlu dibayar untuk 2 kilogram ikan kembung?",
+                options: ["RM24.00", "RM28.00", "RM30.00", "RM32.00"],
+                correctAnswer: "RM28.00",
+                explanation: "RM14.00 x 2 KG = RM28.00 jumlah bayaran."
+            },
+            {
+                id: "plan_11",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Tempoh Jemur Kain",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Menjemur pakaian di ampaian laman rumah ketika cuaca panas.",
+                instructions: "Sila ingat anggaran masa pakaian kering:",
+                data: { items: ["Anggaran Masa Panas Terik: 2 Jam"] },
+                question: "Berapakah jam masa yang diperlukan untuk pakaian kering sepenuhnya di bawah cuaca panas terik?",
+                options: ["1 Jam", "2 Jam", "3 Jam", "4 Jam"],
+                correctAnswer: "2 Jam",
+                explanation: "Anggaran masa ialah 2 jam."
+            },
+            {
+                id: "mem_12",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Nombor Rumah",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Alamat lengkap kediaman anda di taman perumahan.",
+                instructions: "Sila ingat nombor unit rumah:",
+                data: { items: ["Nombor Rumah: No. 24, Jalan Kenanga"] },
+                question: "Apakah nombor rumah anda di Jalan Kenanga?",
+                options: ["12", "18", "24", "30"],
+                correctAnswer: "24",
+                explanation: "Nombor rumah yang betul ialah No. 24."
+            },
+            {
+                id: "super_07",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Pembelian Kopi",
+                difficulty: 1,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Membeli paket serbuk kopi kesukaan di kedai runcit.",
+                instructions: "Sila ingat harga sebungkus kopi:",
+                data: { items: ["Harga Sebungkus Kopi O: RM6.50", "Wang Diberi: RM10.00"] },
+                question: "Berapakah baki wang yang diterima selepas membeli serbuk kopi tersebut?",
+                options: ["RM2.50", "RM3.00", "RM3.50", "RM4.00"],
+                correctAnswer: "RM3.50",
+                explanation: "RM10.00 - RM6.50 = RM3.50 baki."
+            },
+            {
+                id: "plan_12",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Jadual Tukar Cadar Katil",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Menjaga kebersihan bilik tidur dan tempat tidur.",
+                instructions: "Sila ingat kekerapan rutin menukar cadar:",
+                data: { items: ["Rutin Pertukaran Cadar: Setiap 2 Minggu Sekali"] },
+                question: "Berapa kerapkah cadar katil dijadualkan untuk ditukar baharu?",
+                options: ["Setiap Hari", "Setiap Minggu", "Setiap 2 Minggu Sekali", "Setiap Tahun"],
+                correctAnswer: "Setiap 2 Minggu Sekali",
+                explanation: "Kekerapan yang ditetapkan ialah setiap 2 minggu sekali."
+            },
+            {
+                id: "mem_13",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Warna Pasu Bunga",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja", "perhatian"],
+                scenario: "Susunan pasu bunga hiasan di anjung rumah.",
+                instructions: "Sila ingat warna pasu bunga di sudut kiri:",
+                data: { items: ["Warna Pasu Sudut Kiri: Pasu Putih Tanah Liat"] },
+                question: "Apakah warna pasu bunga yang diletakkan di sudut kiri anjung?",
+                options: ["Hitam", "Putih Tanah Liat", "Merah Menyala", "Biru Laut"],
+                correctAnswer: "Putih Tanah Liat",
+                explanation: "Warna pasu di sudut kiri ialah putih tanah liat."
+            },
+            {
+                id: "money_08",
+                category: "Wang",
+                type: "single_choice",
+                title: "Bayaran Parkir Kereta",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Membayar caj petak letak kereta majlis bandar raya.",
+                instructions: "Sila ingat kadar bayaran per jam:",
+                data: { items: ["Kadar Bayaran Parkir: RM0.80 Sejam", "Tempoh Letak Kereta: 3 Jam"] },
+                question: "Berapakah jumlah bayaran untuk tempoh 3 jam letak kereta tersebut?",
+                options: ["RM1.60", "RM2.00", "RM2.40", "RM3.00"],
+                correctAnswer: "RM2.40",
+                explanation: "RM0.80 x 3 Jam = RM2.40 jumlah bayaran parkir."
+            },
+            {
+                id: "plan_13",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Waktu Mandi Petang",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Rutin kebersihan diri petang hari.",
+                instructions: "Sila ingat waktu rutin mandi petang:",
+                data: { items: ["Rutin Mandi Petang: Selepas pukul 5:30 Petang"] },
+                question: "Bilakah waktu yang sesuai untuk memulakan rutin mandi petang?",
+                options: ["12:00 Tengah Hari", "2:00 Petang", "Selepas pukul 5:30 Petang", "10:00 Malam"],
+                correctAnswer: "Selepas pukul 5:30 Petang",
+                explanation: "Rutin mandi petang ditetapkan selepas pukul 5:30 petang."
+            },
+            {
+                id: "mem_14",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Nama Kucing Peliharaan",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Memberi makanan kepada kucing kesayangan di anjung.",
+                instructions: "Sila ingat nama timangan kucing:",
+                data: { items: ["Nama Kucing: Comel Oyen"] },
+                question: "Apakah nama timangan kucing peliharaan anda?",
+                options: ["Comel Oyen", "Si Belang", "Si Comel Hitam", "Manja Putih"],
+                correctAnswer: "Comel Oyen",
+                explanation: "Nama kucing ialah Comel Oyen."
+            },
+            {
+                id: "super_08",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Pembelian Susu Tepung",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Membeli tin susu tepung kesihatan warga emas.",
+                instructions: "Sila ingat harga setin susu:",
+                data: { items: ["Harga Setin Susu Kesihatan: RM35.00", "Kuantiti: 2 Tin"] },
+                question: "Berapakah jumlah harga untuk 2 tin susu kesihatan tersebut?",
+                options: ["RM60.00", "RM65.00", "RM70.00", "RM75.00"],
+                correctAnswer: "RM70.00",
+                explanation: "RM35.00 x 2 = RM70.00 jumlah keseluruhan."
+            },
+            {
+                id: "plan_14",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Tempoh Masak Sup Tulang",
+                difficulty: 2,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Memasak hidangan istimewa untuk majlis keluarga di rumah.",
+                instructions: "Sila ingat tempoh masa mereneh sup:",
+                data: { items: ["Tempoh Mereneh Sup Daging: 1 Jam 30 Minit"] },
+                question: "Berapakah jumlah minit keseluruhan untuk 1 jam 30 minit mereneh sup?",
+                options: ["60 Minit", "75 Minit", "90 Minit", "120 Minit"],
+                correctAnswer: "90 Minit",
+                explanation: "1 jam (60 minit) + 30 minit = 90 minit."
+            },
+            {
+                id: "mem_15",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Nama Lorong Taman",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Panduan arah jalan pulang ke rumah kediaman.",
+                instructions: "Sila ingat nama lorong jalan utama:",
+                data: { items: ["Nama Lorong Utama: Lorong Mawar 2"] },
+                question: "Apakah nama lorong utama kawasan perumahan anda?",
+                options: ["Lorong Melati", "Lorong Mawar 2", "Lorong Cempaka", "Lorong Kenanga"],
+                correctAnswer: "Lorong Mawar 2",
+                explanation: "Nama lorong utama ialah Lorong Mawar 2."
+            },
+            {
+                id: "money_09",
+                category: "Wang",
+                type: "single_choice",
+                title: "Beli Surat Khabar",
+                difficulty: 1,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Membeli naskhah akhbar harian di kedai runcit sudut jalan.",
+                instructions: "Sila ingat harga surat khabar:",
+                data: { items: ["Harga Akhbar Harian: RM2.50", "Wang Tunai Diberi: RM5.00"] },
+                question: "Berapakah baki wang tunai yang dipulangkan oleh penjaga kedai?",
+                options: ["RM1.50", "RM2.00", "RM2.50", "RM3.00"],
+                correctAnswer: "RM2.50",
+                explanation: "RM5.00 - RM2.50 = RM2.50 baki."
+            },
+            {
+                id: "plan_15",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Jadual Ganti Mentol Lampu",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Pemeriksaan keselamatan pendawaian dan lampu rumah.",
+                instructions: "Sila ingat lokasi lampu anjung yang perlu ditukar:",
+                data: { items: ["Lokasi Lampu Rosak: Lampu Anjung Hadapan"] },
+                question: "Di bahagian manakah lampu yang rosak dan perlu diganti baharu?",
+                options: ["Lampu Dapur", "Lampu Bilik Air", "Lampu Anjung Hadapan", "Lampu Garaj Kereta"],
+                correctAnswer: "Lampu Anjung Hadapan",
+                explanation: "Lampu yang rosak terletak di anjung hadapan."
+            },
+            {
+                id: "mem_16",
+                category: "Ingatan",
+                type: "memory_recall",
+                title: "Jenis Buah Tempatan",
+                difficulty: 1,
+                cognitiveSkills: ["ingatan_kerja"],
+                scenario: "Menyediakan hidangan buah-buahan untuk tetamu di ruang tamu.",
+                instructions: "Sila ingat jenis buah yang dihidangkan:",
+                data: { items: ["Buah Hidangan: Betik Sekaki Manis"] },
+                question: "Apakah jenis buah tempatan yang dihidangkan kepada tetamu?",
+                options: ["Durian Musang King", "Betik Sekaki Manis", "Mangga Harumanis", "Ciku Kampung"],
+                correctAnswer: "Betik Sekaki Manis",
+                explanation: "Buah yang dihidangkan ialah betik sekaki manis."
+            },
+            {
+                id: "super_09",
+                category: "Pasar Raya",
+                type: "single_choice",
+                title: "Belian Sabun Basuh",
+                difficulty: 2,
+                cognitiveSkills: ["pengiraan"],
+                scenario: "Membeli cecair pencuci pakaian pekat di pasar raya.",
+                instructions: "Sila ingat harga sebotol cecair pencuci:",
+                data: { items: ["Harga Sebotol Pencuci: RM18.00", "Diskaun Ahli: RM2.00"] },
+                question: "Berapakah harga sebotol cecair pencuci selepas potongan diskaun ahli?",
+                options: ["RM15.00", "RM16.00", "RM17.00", "RM18.00"],
+                correctAnswer: "RM16.00",
+                explanation: "RM18.00 - RM2.00 diskaun = RM16.00 harga akhir."
+            },
+            {
+                id: "plan_16",
+                category: "Perancangan",
+                type: "single_choice",
+                title: "Tempoh Senaman Pagi",
+                difficulty: 1,
+                cognitiveSkills: ["perancangan"],
+                scenario: "Aktiviti kecergasan fizikal ringan di taman rekreasi.",
+                instructions: "Sila ingat tempoh masa berjalan kaki pagi:",
+                data: { items: ["Tempoh Berjalan Kaki: 30 Minit Pagi"] },
+                question: "Berapakah minit tempoh masa yang diperuntukkan untuk aktiviti berjalan kaki pagi?",
+                options: ["15 Minit", "30 Minit", "45 Minit", "60 Minit"],
+                correctAnswer: "30 Minit",
+                explanation: "Tempoh masa berjalan kaki ialah 30 minit."
+            }
+        ];
+
+        // Fungsi Membantu Mengacak Senarai (Fisher-Yates Shuffle)
+        const shuffleArray = (array) => {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        };
+
+        function App() {
+            const [step, setStep] = useState('onboarding'); 
+            const [user, setUser] = useState({ name: "", fontSize: "normal", highContrast: false, voiceEnabled: true });
+            const [tempName, setTempName] = useState(""); 
+            const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+            
+            // Mengambil set soalan rawak (5 soalan setiap sesi) daripada 50 master soalan
+            const [activeExercises, setActiveExercises] = useState([]);
+            const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+            
+            const [selectedOption, setSelectedOption] = useState(null); 
+            const [feedback, setFeedback] = useState(null);
+            
+            const [isMemorizingPhase, setIsMemorizingPhase] = useState(true);
+            const [countdown, setCountdown] = useState(60);
+            const [isAudioFinished, setIsAudioFinished] = useState(false);
+            
+            const [stats, setStats] = useState({
+                completedCount: 0,
+                correctAnswersCount: 0,
+                streak: 3,
+                skills: { ingatan: 82, perancangan: 91, perhatian: 76, pengiraan: 74 }
+            });
+
+            const [memories, setMemories] = useState([
+                { id: 1, title: "Kereta Pertama", content: "Kereta pertama saya ialah Proton Saga merah pada tahun 1985." },
+                { id: 2, title: "Majlis Perkahwinan", content: "Perkahwinan saya diadakan pada bulan Julai 1982." }
+            ]);
+            const [newMemoryTitle, setNewMemoryTitle] = useState("");
+            const [newMemoryContent, setNewMemoryContent] = useState("");
+
+            // Fungsi Pembaca Suara Pintar dengan Callback Selepas Selesai
+            const speakText = (text, onFinished) => {
+                if (!user.voiceEnabled) {
+                    if (onFinished) onFinished();
+                    return;
+                }
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.85;
+
+                    const voices = window.speechSynthesis.getVoices();
+                    const malayVoice = voices.find(v => v.lang.includes('ms') || v.lang.includes('id') || v.name.toLowerCase().includes('malay') || v.name.toLowerCase().includes('indonesia'));
+                    
+                    if (malayVoice) {
+                        utterance.voice = malayVoice;
+                        utterance.lang = malayVoice.lang;
+                    } else {
+                        utterance.lang = 'ms-MY';
+                    }
+
+                    utterance.onend = () => {
+                        if (onFinished) onFinished();
+                    };
+
+                    utterance.onerror = () => {
+                        if (onFinished) onFinished();
+                    };
+
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    if (onFinished) onFinished();
+                }
+            };
+
+            useEffect(() => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        window.speechSynthesis.getVoices();
+                    };
+                }
+            }, []);
+
+            // Mulakan latihan baharu dengan mengacak 5 soalan daripada master soalan
+            const startNewSession = () => {
+                const randomized = shuffleArray(MASTER_EXERCISES).slice(0, 5);
+                setActiveExercises(randomized);
+                setCurrentExerciseIndex(0);
+                setStep('exercise');
+            };
+
+            // Setiap kali latihan bertukar, mulakan fasa mendengar audio arahan
+            useEffect(() => {
+                if (step === 'exercise' && activeExercises.length > 0) {
+                    const currentEx = activeExercises[currentExerciseIndex];
+                    if (currentEx) {
+                        setIsMemorizingPhase(true);
+                        setCountdown(60); 
+                        setIsAudioFinished(false); 
+                        setSelectedOption([]);
+                        
+                        speakText(currentEx.scenario + ". " + currentEx.instructions, () => {
+                            setIsAudioFinished(true);
+                        });
+                    }
+                }
+            }, [currentExerciseIndex, step, activeExercises]);
+
+            // Pemasa undur hanya berjalan jika fasa mengingati aktif, audio sudah habis, dan masa > 0
+            useEffect(() => {
+                let timer;
+                if (step === 'exercise' && isMemorizingPhase && isAudioFinished && countdown > 0) {
+                    timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+                } else if (step === 'exercise' && isMemorizingPhase && isAudioFinished && countdown === 0) {
+                    setIsMemorizingPhase(false);
+                    speakText(activeExercises[currentExerciseIndex].question);
+                }
+                return () => clearTimeout(timer);
+            }, [isMemorizingPhase, isAudioFinished, countdown, step, activeExercises, currentExerciseIndex]);
+
+            const handleOptionClick = (opt, isMulti) => {
+                if (feedback !== null) return;
+                
+                if (isMulti) {
+                    const currentSelected = Array.isArray(selectedOption) ? selectedOption : [];
+                    if (currentSelected.includes(opt)) {
+                        setSelectedOption(currentSelected.filter(item => item !== opt));
+                    } else {
+                        setSelectedOption([...currentSelected, opt]);
+                    }
+                } else {
+                    setSelectedOption(opt);
+                }
+            };
+
+            const handleAnswerSubmit = () => {
+                if (feedback !== null) return;
+                const currentEx = activeExercises[currentExerciseIndex];
+                let isCorrect = false;
+
+                if (Array.isArray(currentEx.correctAnswer)) {
+                    const userAnswers = Array.isArray(selectedOption) ? selectedOption : [];
+                    if (userAnswers.length === currentEx.correctAnswer.length) {
+                        isCorrect = currentEx.correctAnswer.every(item => userAnswers.includes(item));
+                    }
+                } else {
+                    isCorrect = (selectedOption === currentEx.correctAnswer);
+                }
+
+                setFeedback({
+                    correct: isCorrect,
+                    explanation: currentEx.explanation
+                });
+
+                setStats(prev => ({
+                    ...prev,
+                    completedCount: prev.completedCount + 1,
+                    correctAnswersCount: isCorrect ? prev.correctAnswersCount + 1 : prev.correctAnswersCount
+                }));
+            };
+
+            const nextExercise = () => {
+                setSelectedOption(null);
+                setFeedback(null);
+                if (currentExerciseIndex < activeExercises.length - 1) {
+                    setCurrentExerciseIndex(prev => prev + 1);
+                } else {
+                    setStep('home');
+                    setCurrentExerciseIndex(0);
+                }
+            };
+
+            if (step === 'onboarding') {
+                const canProceed = tempName.trim().length > 0 && disclaimerAccepted;
+
+                return (
+                    <div className="max-w-xl mx-auto p-6 bg-white rounded-2xl shadow-lg my-auto border border-slate-200 m-4 space-y-6">
+                        <div>
+                            <h1 className="text-3xl font-bold text-blue-900 mb-2">Selamat Datang ke MindLife</h1>
+                            <p className="text-lg text-slate-700">
+                                Latih otak anda untuk kehidupan seharian melalui situasi realistik. Sila masukkan nama anda dan bersetuju untuk bermula.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="username" className="block text-lg font-bold text-slate-800">
+                                Siapa nama anda?
+                            </label>
+                            <input 
+                                type="text" 
+                                id="username"
+                                placeholder="Contoh: Ahmad / Aminah"
+                                value={tempName}
+                                onChange={(e) => setTempName(e.target.value)}
+                                className="w-full p-4 border-2 border-slate-300 rounded-xl text-lg focus:border-blue-600 focus:outline-none"
+                            />
+                        </div>
+                        
+                        <div className="bg-amber-50 border-l-4 border-amber-500 p-4 text-sm text-amber-900 rounded-r-lg">
+                            <p className="font-semibold mb-1">Nota Kesihatan Penting:</p>
+                            MindLife menyediakan latihan kognitif untuk menyokong aktiviti mental dan penuaan sihat. Ia <strong>bukan</strong> peranti perubatan dan tidak mendiagnosis, mencegah, atau merawat demensia atau Alzheimer.
+                        </div>
+
+                        <div className="flex items-center space-x-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <input 
+                                type="checkbox" 
+                                id="disclaimer" 
+                                checked={disclaimerAccepted} 
+                                onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+                                className="w-7 h-7 text-blue-600 rounded cursor-pointer"
+                            />
+                            <label htmlFor="disclaimer" className="text-base text-slate-800 font-bold cursor-pointer">
+                                Saya faham dan bersetuju dengan syarat di atas. (Wajib tanda untuk mula)
+                            </label>
+                        </div>
+
+                        <button 
+                            disabled={!canProceed}
+                            onClick={() => {
+                                if (!canProceed) return; 
+                                setUser(prev => ({ ...prev, name: tempName.trim() }));
+                                setStep('home'); 
+                                speakText(`Selamat pagi ${tempName.trim()}. Sedia untuk senaman otak hari ini?`);
+                            }}
+                            className={`w-full py-4 text-xl font-bold rounded-xl shadow touch-target transition-all ${
+                                canProceed ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer' : 'bg-slate-300 text-slate-400 cursor-not-allowed'
+                            }`}
+                        >
+                            Mula Sekarang
+                        </button>
+                    </div>
+                );
+            }
+
+            const accuracyPercentage = stats.completedCount > 0 
+                ? Math.round((stats.correctAnswersCount / stats.completedCount) * 100) 
+                : 84;
+
+            const currentEx = activeExercises[currentExerciseIndex];
+            const isMultiSelection = currentEx ? Array.isArray(currentEx.correctAnswer) : false;
+
+            return (
+                <div className="flex flex-col flex-1 max-w-2xl mx-auto w-full bg-white shadow-xl min-h-screen pb-24">
+                    <header className="bg-blue-900 text-white p-5 flex justify-between items-center shadow-md">
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-wide">MindLife</h1>
+                            <p className="text-sm text-blue-200">Senaman Otak Harian</p>
+                        </div>
+                        <div className="text-right">
+                            <span className="bg-blue-800 text-blue-100 px-3 py-1 rounded-full text-sm font-semibold">
+                                🔥 {stats.streak} Hari Berterusan
+                            </span>
+                        </div>
+                    </header>
+
+                    <main className="flex-1 p-6">
+                        {step === 'home' && (
+                            <div className="space-y-6">
+                                <div className="bg-blue-50 border border-blue-200 p-6 rounded-2xl">
+                                    <h2 className="text-2xl font-bold text-blue-900 mb-2">Selamat pagi, {user.name}</h2>
+                                    <p className="text-slate-700 text-lg mb-4">Set senaman otak harian baru dengan soalan rawak sudah bersedia.</p>
+                                    <button 
+                                        onClick={startNewSession}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl text-xl shadow-lg touch-target flex items-center justify-center space-x-2 cursor-pointer"
+                                    >
+                                        <span>▶ Mula Senaman Hari Ini</span>
+                                    </button>
+                                </div>
+
+                                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                                    <h3 className="text-xl font-bold text-slate-800 mb-4">Prestasi Kemahiran Anda</h3>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <div className="flex justify-between font-semibold mb-1 text-slate-700">
+                                                <span>Ingatan</span>
+                                                <span>{stats.skills.ingatan}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                                                <div className="bg-blue-600 h-full rounded-full" style={{ width: `${stats.skills.ingatan}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between font-semibold mb-1 text-slate-700">
+                                                <span>Perancangan</span>
+                                                <span>{stats.skills.perancangan}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                                                <div className="bg-emerald-600 h-full rounded-full" style={{ width: `${stats.skills.perancangan}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between font-semibold mb-1 text-slate-700">
+                                                <span>Perhatian</span>
+                                                <span>{stats.skills.perhatian}%</span>
+                                            </div>
+                                            <div className="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                                                <div className="bg-amber-600 h-full rounded-full" style={{ width: `${stats.skills.perhatian}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'exercise' && currentEx && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center bg-slate-100 p-3 rounded-xl">
+                                    <span className="font-bold text-slate-700">Latihan {currentExerciseIndex + 1} dari {activeExercises.length}</span>
+                                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-bold">
+                                        {currentEx.category}
+                                    </span>
+                                </div>
+
+                                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="text-2xl font-bold text-slate-900">{currentEx.title}</h3>
+                                        <button 
+                                            onClick={() => {
+                                                if (isMemorizingPhase) {
+                                                    speakText(currentEx.scenario + ". " + currentEx.instructions, () => setIsAudioFinished(true));
+                                                } else {
+                                                    speakText(currentEx.scenario + ". " + currentEx.question);
+                                                }
+                                            }}
+                                            className="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg font-bold text-sm border border-blue-200 touch-target flex items-center space-x-1 hover:bg-blue-100 cursor-pointer"
+                                        >
+                                            <span>🔊 Dengar Semula</span>
+                                        </button>
+                                    </div>
+
+                                    <p className="text-slate-700 bg-slate-50 p-4 rounded-xl text-lg border-l-4 border-blue-500">
+                                        {currentEx.scenario}
+                                    </p>
+
+                                    {/* FASA MENGINGAT (PEMASA BERMULA HANYA SELEPAS AUDIO SELESAI) */}
+                                    {isMemorizingPhase ? (
+                                        <div className="bg-blue-50 border-2 border-blue-300 p-6 rounded-2xl text-center space-y-4">
+                                            <p className="text-xl font-bold text-blue-900">{currentEx.instructions}</p>
+                                            
+                                            <div className="text-2xl font-extrabold text-blue-600 bg-white inline-block px-4 py-2 rounded-xl shadow-sm">
+                                                {!isAudioFinished ? (
+                                                    <span className="text-amber-700 animate-pulse">🔊 Mendengar Arahan Audio...</span>
+                                                ) : (
+                                                    <span>⏳ Masa Mengingat: {countdown} Saat</span>
+                                                )}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                                                {currentEx.data.items.map((item, idx) => (
+                                                    <div key={idx} className="bg-white p-4 rounded-xl border-2 border-blue-400 font-bold text-lg text-blue-900 shadow">
+                                                        📋 {item}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button 
+                                                onClick={() => {
+                                                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                                                    setIsMemorizingPhase(false);
+                                                }}
+                                                className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-lg mt-2 hover:bg-blue-700 shadow cursor-pointer"
+                                            >
+                                                Saya Dah Ingat, Teruskan ke Soalan →
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        /* FASA SOALAN & PILIHAN */
+                                        <div className="space-y-4">
+                                            <p className="text-lg font-medium text-slate-800">
+                                                {currentEx.question} {isMultiSelection && <span className="text-sm text-blue-600 font-bold block mt-1">(Pilih jawapan yang tepat berdasarkan maklumat di atas)</span>}
+                                            </p>
+
+                                            <div className="space-y-3 pt-2">
+                                                {currentEx.options.map((opt, idx) => {
+                                                    const isSelected = isMultiSelection 
+                                                        ? (Array.isArray(selectedOption) && selectedOption.includes(opt))
+                                                        : (selectedOption === opt);
+
+                                                    return (
+                                                        <button
+                                                            key={idx}
+                                                            disabled={feedback !== null}
+                                                            onClick={() => handleOptionClick(opt, isMultiSelection)}
+                                                            className={`w-full text-left p-4 rounded-xl text-lg font-medium border-2 transition-all touch-target flex justify-between items-center cursor-pointer ${
+                                                                isSelected 
+                                                                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold shadow-sm' 
+                                                                    : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-800'
+                                                            }`}
+                                                        >
+                                                            <span>{opt}</span>
+                                                            {isMultiSelection && (
+                                                                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm border-2 font-bold ${isSelected ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-300'}`}>
+                                                                    {isSelected ? '✓' : ''}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {feedback === null && (
+                                                <button
+                                                    disabled={isMultiSelection ? (!selectedOption || selectedOption.length === 0) : !selectedOption}
+                                                    onClick={handleAnswerSubmit}
+                                                    className={`w-full py-4 font-bold rounded-xl text-xl mt-4 touch-target transition-all shadow ${
+                                                        (isMultiSelection ? (selectedOption && selectedOption.length > 0) : selectedOption)
+                                                            ? 'bg-blue-600 text-white hover:bg-blue-700 cursor-pointer'
+                                                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                                    }`}
+                                                >
+                                                    Hantar Jawapan
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {feedback && (
+                                        <div className={`p-5 rounded-2xl space-y-3 ${feedback.correct ? 'bg-emerald-50 border border-emerald-300 text-emerald-900' : 'bg-amber-50 border border-amber-300 text-amber-900'}`}>
+                                            <p className="text-xl font-bold">
+                                                {feedback.correct ? "✨ Bagus sekali! Jawapan anda tepat." : "💡 Cuba lagi untuk latihan seterusnya."}
+                                            </p>
+                                            <p className="text-base">{feedback.explanation}</p>
+                                            <button 
+                                                onClick={nextExercise}
+                                                className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl text-xl mt-4 touch-target hover:bg-blue-700 shadow cursor-pointer"
+                                            >
+                                                Seterusnya →
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'progress' && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-slate-900">Prestasi Latihan Anda</h2>
+                                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <div className="grid grid-cols-2 gap-4 text-center">
+                                        <div className="bg-blue-50 p-4 rounded-xl">
+                                            <p className="text-sm text-slate-600">Latihan Selesai</p>
+                                            <p className="text-3xl font-bold text-blue-700">{stats.completedCount + 12}</p>
+                                        </div>
+                                        <div className="bg-emerald-50 p-4 rounded-xl">
+                                            <p className="text-sm text-slate-600">Ketepatan Purata</p>
+                                            <p className="text-3xl font-bold text-emerald-700">{accuracyPercentage}%</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-600 text-sm italic mt-2">
+                                        Nota: Skor ini adalah ukuran prestasi latihan harian anda untuk mengekalkan kecergasan mental.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'memories' && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-slate-900">Kisah Hidup & Memori Peribadi</h2>
+                                <p className="text-slate-600">Simpan memori peribadi anda untuk dijadikan latihan ingatan yang bermakna.</p>
+                                
+                                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-4">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Tajuk Memori (Cth: Kereta Pertama)"
+                                        value={newMemoryTitle}
+                                        onChange={(e) => setNewMemoryTitle(e.target.value)}
+                                        className="w-full p-4 border border-slate-300 rounded-xl text-lg"
+                                    />
+                                    <textarea 
+                                        placeholder="Butiran Memori (Cth: Kereta pertama saya ialah...)"
+                                        value={newMemoryContent}
+                                        onChange={(e) => setNewMemoryContent(e.target.value)}
+                                        className="w-full p-4 border border-slate-300 rounded-xl text-lg h-24"
+                                    />
+                                    <button 
+                                        onClick={() => {
+                                            if (newMemoryTitle.trim() && newMemoryContent.trim()) {
+                                                setMemories([...memories, { id: Date.now(), title: newMemoryTitle, content: newMemoryContent }]);
+                                                setNewMemoryTitle("");
+                                                setNewMemoryContent("");
+                                            }
+                                        }}
+                                        className="w-full bg-blue-600 text-white font-bold py-4 rounded-xl text-lg touch-target hover:bg-blue-700 cursor-pointer"
+                                    >
+                                        Simpan Memori
+                                    </button>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {memories.map(mem => (
+                                        <div key={mem.id} className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
+                                            <h4 className="font-bold text-blue-900 text-lg">{mem.title}</h4>
+                                            <p className="text-slate-700 mt-1">{mem.content}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 'profile' && (
+                            <div className="space-y-6">
+                                <h2 className="text-2xl font-bold text-slate-900">Tetapan & Kebolehampuan</h2>
+                                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm space-y-6">
+                                    <div>
+                                        <p className="text-slate-600 text-sm mb-1">Nama Pengguna Semasa:</p>
+                                        <p className="text-xl font-bold text-blue-900">{user.name}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center border-t pt-4">
+                                        <span className="text-lg font-medium text-slate-800">Arahan Suara Audio (Bahasa Melayu)</span>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={user.voiceEnabled}
+                                            onChange={(e) => setUser({...user, voiceEnabled: e.target.checked})}
+                                            className="w-7 h-7 text-blue-600 rounded cursor-pointer"
+                                        />
+                                    </div>
+                                    <div className="border-t pt-4">
+                                        <p className="text-slate-600 text-sm mb-2">Mod Bahasa / Language:</p>
+                                        <span className="bg-blue-100 text-blue-800 font-bold px-4 py-2 rounded-lg inline-block">Bahasa Malaysia (Aktif)</span>
+                                    </div>
+                                    <div className="border-t pt-4">
+                                        <button 
+                                            onClick={() => { setTempName(user.name); setStep('onboarding'); }}
+                                            className="text-red-600 font-bold text-lg hover:underline cursor-pointer"
+                                        >
+                                            Tukar Nama / Keluar Akaun
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    {step !== 'onboarding' && (
+                        <nav className="bg-white border-t border-slate-200 fixed bottom-0 left-0 right-0 max-w-2xl mx-auto flex justify-around p-3 shadow-lg z-50">
+                            <button 
+                                onClick={() => setStep('home')} 
+                                className={`flex flex-col items-center p-2 rounded-xl touch-target cursor-pointer ${step === 'home' ? 'text-blue-600 font-bold' : 'text-slate-600'}`}
+                            >
+                                <span className="text-2xl">🏠</span>
+                                <span className="text-sm">Utama</span>
+                            </button>
+                            <button 
+                                onClick={startNewSession} 
+                                className={`flex flex-col items-center p-2 rounded-xl touch-target cursor-pointer ${step === 'exercise' ? 'text-blue-600 font-bold' : 'text-slate-600'}`}
+                            >
+                                <span className="text-2xl">🧠</span>
+                                <span className="text-sm">Latih</span>
+                            </button>
+                            <button 
+                                onClick={() => setStep('progress')} 
+                                className={`flex flex-col items-center p-2 rounded-xl touch-target cursor-pointer ${step === 'progress' ? 'text-blue-600 font-bold' : 'text-slate-600'}`}
+                            >
+                                <span className="text-2xl">📈</span>
+                                <span className="text-sm">Kemajuan</span>
+                            </button>
+                            <button 
+                                onClick={() => setStep('memories')} 
+                                className={`flex flex-col items-center p-2 rounded-xl touch-target cursor-pointer ${step === 'memories' ? 'text-blue-600 font-bold' : 'text-slate-600'}`}
+                            >
+                                <span className="text-2xl">📖</span>
+                                <span className="text-sm">Memori</span>
+                            </button>
+                            <button 
+                                onClick={() => setStep('profile')} 
+                                className={`flex flex-col items-center p-2 rounded-xl touch-target cursor-pointer ${step === 'profile' ? 'text-blue-600 font-bold' : 'text-slate-600'}`}
+                            >
+                                <span className="text-2xl">⚙️</span>
+                                <span className="text-sm">Profil</span>
+                            </button>
+                        </nav>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
